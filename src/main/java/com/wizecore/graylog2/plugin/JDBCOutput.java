@@ -2,8 +2,13 @@ package com.wizecore.graylog2.plugin;
 
 
 import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,17 +39,47 @@ public class JDBCOutput implements MessageOutput {
     private String username;
     private String password;
     private String driver;
+    private boolean shutdown;
     
     private Connection connection;
+	private PreparedStatement logInsert;
+	private PreparedStatement logInsertAttribute;
     
     @Inject 
-    public JDBCOutput(@Assisted Stream stream, @Assisted Configuration conf) {
+    public JDBCOutput(@Assisted Stream stream, @Assisted Configuration conf) throws SQLException {
     	url = conf.getString("url");
     	username = conf.getString("username");
     	password = conf.getString("password");
     	driver = conf.getString("driver");
     	log.info("Creating JDBC output " + url);
+    	
+    	if (driver != null && !driver.trim().isEmpty()) {
+    		try {
+    			Class.forName(driver);
+    		} catch (Exception e) {
+    			log.log(Level.SEVERE, "Failed to find/register driver (" + driver + "): " + e.getMessage(), e);
+    		}
+    	}
+    	
+    	reconnect();
     }
+
+	private void reconnect() throws SQLException {
+		if (connection != null) {
+			try {
+				connection.close();
+			} catch (SQLException e) {
+				log.log(Level.WARNING, e.getMessage(), e);
+			}
+		}
+		
+		connection = username != null && !username.trim().isEmpty() ? 
+    			DriverManager.getConnection(url, username.trim(), password != null ? password.trim() : null) :
+    			DriverManager.getConnection(url);
+    			
+    	logInsert = connection.prepareStatement("insert into log (message_date, message_id, source, message) values (?, ?, ?, ?)");
+    	logInsertAttribute = connection.prepareStatement("insert into log_attribute (message_id, name, value) values (?, ?, ?)");
+	}
     
     @Override
     public boolean isRunning() {
@@ -53,6 +88,26 @@ public class JDBCOutput implements MessageOutput {
     
     @Override
     public void stop() {
+    	shutdown = true;
+    	
+    	if (logInsertAttribute != null) {
+    		try {
+				logInsertAttribute.close();
+    		} catch (SQLException e) {
+				log.log(Level.WARNING, e.getMessage(), e);
+			}
+    		logInsert = null;
+    	}
+    	
+    	if (logInsert != null) {
+    		try {
+				logInsert.close();
+    		} catch (SQLException e) {
+				log.log(Level.WARNING, e.getMessage(), e);
+			}
+    		logInsert = null;
+    	}
+    	
         if (connection != null) {
         	try {
 				connection.close();
@@ -72,6 +127,49 @@ public class JDBCOutput implements MessageOutput {
     
     @Override
     public void write(Message msg) throws Exception {
+    	if (shutdown) {
+    		return;
+    	}
+    	
+    	try {
+    		if (connection == null) {
+    			reconnect();
+    		}
+    		
+	    	connection.setAutoCommit(false);
+	    	try {
+	    		int index = 1;
+	    		logInsert.setTimestamp(index++, new Timestamp(msg.getTimestamp().getMillis()));
+	    		logInsert.setString(index++, msg.getId());
+	    		logInsert.setString(index++, msg.getSource());
+	    		logInsert.setString(index++, msg.getMessage());
+	    		logInsert.execute();
+	    		Object id = null;
+	    		ResultSet ids = logInsert.getGeneratedKeys();
+	    		while (ids != null && ids.next()) {
+	    			id = ids.getObject(1);
+	    		}
+	    		if (id != null) {
+	    			for (Entry<String, Object> e: msg.getFieldsEntries()) {
+	    				String name = e.getKey();
+	    				Object value = e.getValue();
+	    				logInsertAttribute.setObject(1, id);
+	    				logInsertAttribute.setString(2,  name);
+	    				logInsertAttribute.setObject(3, value);
+	    				logInsertAttribute.execute();
+	    			}
+	    		} else {
+	    			throw new SQLException("Failed to generate ID for primary log record!");
+	    		}
+	    	} finally {
+	    		connection.rollback();
+	    		connection.commit();
+	    		connection.setAutoCommit(true);
+	    	}
+    	} catch (SQLException e) {
+    		log.log(Level.WARNING, "JDBC output error: " + e.getMessage(), e);
+    		connection = null;
+    	}
     }
             
 	public interface Factory extends MessageOutput.Factory<JDBCOutput> {
