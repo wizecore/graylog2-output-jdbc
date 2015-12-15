@@ -79,6 +79,7 @@ public class JDBCOutput implements MessageOutput {
     			
     	logInsert = connection.prepareStatement("insert into log (message_date, message_id, source, message) values (?, ?, ?, ?)");
     	logInsertAttribute = connection.prepareStatement("insert into log_attribute (message_id, name, value) values (?, ?, ?)");
+	    connection.setAutoCommit(false);
 	}
     
     @Override
@@ -136,40 +137,44 @@ public class JDBCOutput implements MessageOutput {
     			reconnect();
     		}
     		
-	    	connection.setAutoCommit(false);
-	    	try {
-	    		int index = 1;
-	    		logInsert.setTimestamp(index++, new Timestamp(msg.getTimestamp().getMillis()));
-	    		logInsert.setString(index++, msg.getId());
-	    		logInsert.setString(index++, msg.getSource());
-	    		logInsert.setString(index++, msg.getMessage());
-	    		logInsert.execute();
-	    		Object id = null;
-	    		ResultSet ids = logInsert.getGeneratedKeys();
-	    		while (ids != null && ids.next()) {
-	    			id = ids.getObject(1);
-	    		}
-	    		if (id != null) {
-	    			for (Entry<String, Object> e: msg.getFieldsEntries()) {
-	    				String name = e.getKey();
-	    				Object value = e.getValue();
-	    				logInsertAttribute.setObject(1, id);
-	    				logInsertAttribute.setString(2,  name);
-	    				logInsertAttribute.setObject(3, value);
-	    				logInsertAttribute.execute();
-	    			}
-	    		} else {
-	    			throw new SQLException("Failed to generate ID for primary log record!");
-	    		}
-	    	} finally {
-	    		connection.rollback();
-	    		connection.commit();
-	    		connection.setAutoCommit(true);
-	    	}
+    		int index = 1;
+    		logInsert.setTimestamp(index++, new Timestamp(msg.getTimestamp().getMillis()));
+    		logInsert.setString(index++, msg.getId());
+    		logInsert.setString(index++, msg.getSource());
+    		logInsert.setString(index++, msg.getMessage());
+    		logInsert.execute();
+    		Object id = null;
+    		ResultSet ids = logInsert.getGeneratedKeys();
+    		while (ids != null && ids.next()) {
+    			id = ids.getObject(1);
+    		}
+    		if (id != null) {
+    			for (Entry<String, Object> e: msg.getFieldsEntries()) {
+    				String name = e.getKey();
+    				Object value = e.getValue();
+					String s = value != null ? value.toString() : null;
+    				logInsertAttribute.setObject(1, id);
+    				logInsertAttribute.setString(2,  name);
+    				logInsertAttribute.setString(3, s);
+    				logInsertAttribute.execute();
+    			}
+    		} else {
+    			throw new SQLException("Failed to generate ID for primary log record!");
+    		}
     	} catch (SQLException e) {
     		log.log(Level.WARNING, "JDBC output error: " + e.getMessage(), e);
+            try {
+                connection.rollback();
+                connection.setAutoCommit(true);
+            } catch (SQLException ee) {
+                // Don`t care
+            }
     		connection = null;
-    	}
+    	} finally {
+            if (connection != null) {
+                connection.commit();
+            }
+        }
     }
             
 	public interface Factory extends MessageOutput.Factory<JDBCOutput> {
