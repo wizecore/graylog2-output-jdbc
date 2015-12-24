@@ -25,49 +25,49 @@ Add following line to graylog2-output-jdbc.jar/META-INF/MANIFEST.MF
 
 ## Output options
 
-### Driver to use
+#### Driver to use
 
 Driver to initialize. Needed so URL can be handled properly.
 
 Default value: NONE
 
-### JDBC URL
+#### JDBC URL
 
 Required. Fully qualified JDBC url to connect to.
 
 Default value: NONE
 
-### Username
+#### Username
 
 Optional. Username to connect as. If not specified, no password will be passed to driver.
 
 Default value: NONE 
 
-### Password
+#### Password
 
 Optional. Password for user.
 
 Default value: NONE 
 
-### Additional fields
+#### Additional fields
 
 Optional. Comma separated list of additional fields for Message insert query
 
 Default value: NONE
 
-### Message insert query
+#### Message insert query
 
 Required. Query to execute to add log entry. Must contain required 4 columns and optional (see Additional fields). Must produce generated key (ID).
 
 Default value: insert into log (message_date, message_id, source, message) values (?, ?, ?, ?)
 
-### Attribute insert query
+#### Attribute insert query
 
 Optional. If specified all attributes will be added using this query.
 
 Default value: insert into log_attribute (log_id, name, value) values (?, ?, ?)
 
-## Table definition
+### Table definition
 
 By default output uses table 'log' for main message entry and 'log_attribute' for attributes.
 Sample table creation script:
