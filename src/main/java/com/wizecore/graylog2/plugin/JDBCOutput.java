@@ -220,27 +220,27 @@ public class JDBCOutput implements MessageOutput {
     		}
     		    		
     		synchronized (connection) {
-        		int index = 1;
-        		logInsert.setTimestamp(index++, new Timestamp(msg.getTimestamp().getMillis()));
-        		logInsert.setString(index++, msg.getId());
-        		logInsert.setString(index++, msg.getSource());
+        		int field_index = 1;
+        		logInsert.setTimestamp(field_index++, new Timestamp(msg.getTimestamp().getMillis()));
+        		logInsert.setString(field_index++, msg.getId());
+        		logInsert.setString(field_index++, msg.getSource());
         		String ms = msg.getMessage();
         		if (ms != null && ms.length() > MAX_MESSAGE) {
         			ms = ms.substring(0, MAX_MESSAGE);
         		}
-        		logInsert.setString(index++, ms);
+        		logInsert.setString(field_index++, ms);
         		
         		if (fields != null) {
         			for (String f: fields) {
         				Object value = msg.getField(f);
         				String s = value != null ? value.toString() : null;
         				if (s == null) {
-        					logInsert.setNull(index++, Types.VARCHAR);
+        					logInsert.setNull(field_index++, Types.VARCHAR);
         				} else {
         					if (s.length() > MAX_VALUE) {
         						s = s.substring(0, MAX_VALUE);
         					}
-        					logInsert.setString(index++, s);
+        					logInsert.setString(field_index++, s);
         				}
         			}
         		}
@@ -258,14 +258,17 @@ public class JDBCOutput implements MessageOutput {
             				String name = e.getKey();
             				Object value = e.getValue();
         					String s = value != null ? value.toString() : null;
-            				logInsertAttribute.setObject(1, id);
-            				logInsertAttribute.setString(2,  name);
-        					if (s.length() > MAX_VALUE) {
-        						s = s.substring(0, MAX_VALUE);
-        					}
-            				logInsertAttribute.setString(3, s);
-            				logInsertAttribute.executeUpdate();
+							if (s != null) {
+								logInsertAttribute.setObject(1, id);
+								logInsertAttribute.setString(2, name);
+								if (s.length() > MAX_VALUE) {
+									s = s.substring(0, MAX_VALUE);
+								}
+								logInsertAttribute.setString(3, s);
+								logInsertAttribute.addBatch();
+							}
             			}
+						logInsertAttribute.executeBatch();
             		} else {
             			throw new SQLException("Failed to generate ID for primary log record!");
             		}
