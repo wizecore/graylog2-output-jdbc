@@ -1,13 +1,13 @@
 # Graylog output plugin JDBC
 
-Sends log to traditional RDMBS databases with the use of JDBC.
+Sends log from a steam to a traditional RDMBS database via JDBC.
 
 ## How to build
 
-- Use `mvn package` to create JAR
+- Use `mvn clean package` to create JAR
 - See **Providing JDBC driver** on how to adjust JAR for your RDBMS
 - Put prepared JAR inside **Graylog** plugins folder
-- Put JDBC driver inside **Graylog** plugins folder
+- Put a JDBC driver inside **Graylog** plugins folder
 - Restart Graylog
 - Create new output globally or inside stream
 - Connect output to your stream
@@ -16,7 +16,7 @@ Sends log to traditional RDMBS databases with the use of JDBC.
 ## Providing JDBC driver
 
 Graylog does not ship with JDBC drivers.
-You must add your driver JAR manually to plugins and **update** graylog-output-jdbc-2.5.1.jar accordingly.
+You must add your driver JAR manually to plugins folder and **update** graylog-output-jdbc-2.5.1.jar accordingly.
 
 Add following line to graylog2-output-jdbc-2.5.1.jar/META-INF/MANIFEST.MF
 
@@ -32,10 +32,10 @@ Class-Path: mysql-connector-java-8.0.17.jar
 
 ### How to update using command line?
 
-Create manifest.mf and use jar tool from JDK:
+Create `my-manifest.mf` and use jar tool from JDK:
 
 ```
-jar -uvmf manifest-mysql.mf target/graylog-output-jdbc-2.5.1.jar
+jar -uvmf my-manifest.mf target/graylog-output-jdbc-2.5.1.jar
 ```
 
 ## Output options
@@ -94,26 +94,27 @@ By default output uses table 'log' for main message entry and 'log_attribute' fo
 Sample table creation script (MySQL):
 
 ```sql
-	create table if not exists log (
-		id int not null auto_increment,
-		message_date datetime,
-		message_id varchar(64),
-		source varchar(32),
-		message varchar(4096) null,
-		PRIMARY KEY (id)
-	);
+create table if not exists log (
+  id int not null auto_increment,
+  message_date datetime,
+  message_id varchar(64),
+  source varchar(32),
+  message varchar(4096) null,
+  PRIMARY KEY (id)
+);
 
-	create table if not exists log_attribute (
-		id int not null auto_increment,
-		log_id numeric(10,0),
-		name varchar(255),
-		value varchar(4096) null,
-		PRIMARY key (ID)
-	);
+create table if not exists log_attribute (
+  id int not null auto_increment,
+  log_id numeric(10,0),
+  name varchar(255),
+  value varchar(4096) null,
+  primary key (id),
+  foreign key (log_id) references log(id)
+);
 ```
 
 Make sure that for table log, column ID are generated automatically. For example add 'identity' (MS SQL/Sybase ASE) or AUTO_INCREMENT (MySQL) into column definition.
 
 ## Links
 
-- https://github.com/Graylog2
+- https://www.graylog.org/
