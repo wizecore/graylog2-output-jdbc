@@ -29,7 +29,7 @@ Class-Path: mysql-connector-java-8.0.17.jar
 
 ## Output options
 
-#### Driver to use
+#### Driver class to use (optional)
 
 Driver class to initialize. Needed so URL can be handled properly.
 
