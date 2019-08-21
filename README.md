@@ -5,75 +5,88 @@ Sends log to traditional RDMBS databases with the use of JDBC.
 ## How to build
 
 - Use `mvn package` to create JAR
-- See **Providing JDBC driver** to adjust JAR for your RDBMS
+- See **Providing JDBC driver** on how to adjust JAR for your RDBMS
 - Put prepared JAR inside **Graylog** plugins folder
 - Put JDBC driver inside **Graylog** plugins folder
 - Restart Graylog
-- Create new output globally or inside stream.
+- Create new output globally or inside stream
 - Connect output to your stream
-- Make sure your RDBMS commit speed is sufficient to handle output message rate.
+- Make sure your RDBMS commit speed is sufficient to handle output message rate
 
-## Important note about JDBC driver
+## Providing JDBC driver
 
-Graylog does not ship with JDBC drivers. 
-You must add your driver JAR manually to plugins and **update* graylog2-output-jdbc.jar accordingly.
+Graylog does not ship with JDBC drivers.
+You must add your driver JAR manually to plugins and **update** graylog-output-jdbc-2.5.1.jar accordingly.
 
-Add following line to graylog2-output-jdbc.jar/META-INF/MANIFEST.MF
+Add following line to graylog2-output-jdbc-2.5.1.jar/META-INF/MANIFEST.MF
 
-Class-Path: <driver>.jar
+```
+Class-Path: driver.jar
+```
 
-Example: 
+Example:
+
 ```
 Class-Path: mysql-connector-java-8.0.17.jar
+```
+
+### How to update using command line?
+
+Create manifest.mf and use jar tool from JDK:
+
+```
+jar -uvmf manifest-mysql.mf target/graylog-output-jdbc-2.5.1.jar
 ```
 
 ## Output options
 
 #### Driver class to use (optional)
 
-Driver class to initialize. Needed so URL can be handled properly.
+Driver class to initialize. Needed so URL can be handled properly. Recent JDK 8+ have autodiscovery of JDBC drivers so it might be not needed.
 
 Default value: NONE
 
-Example: com.mysql.jdbc.Driver
+Example: `com.mysql.jdbc.Driver`
 
 #### JDBC URL
 
-Required. Fully qualified JDBC url to connect to.
+Fully qualified JDBC url to connect to.
 
 Default value: NONE
 
-Example: jdbc:mysql://localhost:3307/graylog
+Example: `jdbc:mysql://localhost:3307/graylog`
 
-#### Username
+#### Username (optional)
 
-Optional. Username to connect as. If not specified, no password will be passed to driver.
-
-Default value: NONE
-
-#### Password
-
-Optional. Password for user.
+Username to connect to RDBMS as. If not specified, no password will be passed to driver.
 
 Default value: NONE
 
-#### Additional fields
+#### Password (optional)
 
-Optional. Comma separated list of additional fields for Message insert query
+Password for user.
+
+Default value: NONE
+
+#### Additional fields (optional)
+
+Comma separated list of additional attributes for Message insert query. I.e. if you have custom attribute defined in your log i.e. `hostname`, specify it here and adjust a query accordingly, i.e. `insert into log (message_date, message_id, source, message, hostname) values (?, ?, ?, ?, ?)`
+
+This way you don`t need to use log_attribute table, greatly increasing commit speed.
 
 Default value: NONE
 
 #### Message insert query
 
-Required. Query to execute to add log entry. Must contain required 4 columns and optional (see Additional fields). Must produce generated key (ID).
+Query to execute to add log entry. Must contain required 4 columns and optional (see Additional fields). Must produce generated key (ID).
 
-Default value: insert into log (message_date, message_id, source, message) values (?, ?, ?, ?)
+Default value: `insert into log (message_date, message_id, source, message) values (?, ?, ?, ?)`
 
-#### Attribute insert query
+#### Attribute insert query (optional)
 
-Optional. If specified all attributes will be added using this query.
+If specified all attributes will be added using this query.
 
-Default value: insert into log_attribute (log_id, name, value) values (?, ?, ?)
+Default value: `insert into log_attribute (log_id, name, value) values (?, ?, ?)`
 
 ### Table definition
 

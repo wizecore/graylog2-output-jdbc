@@ -22,3 +22,5 @@ mysql*.jar
 .classpath
 .project
 .factorypath
+.vscode
+

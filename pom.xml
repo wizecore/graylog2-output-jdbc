@@ -14,7 +14,7 @@
     <packaging>jar</packaging>
 
     <name>graylog-output-jdbc</name>
-    <url>http://maven.apache.org</url>
+    <url>https://github.com/wizecore/graylog2-output-jdbc</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -24,8 +24,6 @@
         <maven.deploy.skip>true</maven.deploy.skip>
         <maven.site.skip>true</maven.site.skip>
         <graylog2.version>2.5.1</graylog2.version>
-        <graylog2.syslog4j.version>0.9.60</graylog2.syslog4j.version>
-        <graylog2.plugin-dir>/usr/share/graylog-server/plugin</graylog2.plugin-dir>
     </properties>
 
     <dependencies>
@@ -39,12 +37,6 @@
             <groupId>org.graylog2</groupId>
             <artifactId>graylog2-server</artifactId>
             <version>${graylog2.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.graylog2</groupId>
-            <artifactId>syslog4j</artifactId>
-            <version>${graylog2.syslog4j.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -92,60 +84,6 @@
                 </configuration>
             </plugin>
 
-            <plugin>
-                <artifactId>jdeb</artifactId>
-                <groupId>org.vafer</groupId>
-                <version>1.5</version>
-                <configuration>
-                    <deb>${project.build.directory}/${project.artifactId}-${project.version}.deb</deb>
-                    <dataSet>
-                        <data>
-                            <src>${project.build.directory}/${project.build.finalName}.jar</src>
-                            <type>file</type>
-                            <mapper>
-                                <type>perm</type>
-                                <prefix>${graylog2.plugin-dir}</prefix>
-                                <filemode>644</filemode>
-                                <user>root</user>
-                                <group>root</group>
-                            </mapper>
-                        </data>
-                    </dataSet>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>rpm-maven-plugin</artifactId>
-                <version>2.1.5</version>
-                <configuration>
-                    <group>Application/Internet</group>
-                    <prefixes>
-                        <prefix>/usr</prefix>
-                    </prefixes>
-                    <defineStatements>
-                        <defineStatement>_unpackaged_files_terminate_build 0</defineStatement>
-                        <defineStatement>_binaries_in_noarch_packages_terminate_build 0</defineStatement>
-                    </defineStatements>
-                    <defaultFilemode>644</defaultFilemode>
-                    <defaultDirmode>755</defaultDirmode>
-                    <defaultUsername>root</defaultUsername>
-                    <defaultGroupname>root</defaultGroupname>
-                    <mappings>
-                        <mapping>
-                            <directory>${graylog2.plugin-dir}</directory>
-                            <sources>
-                                <source>
-                                    <location>${project.build.directory}/</location>
-                                    <includes>
-                                        <include>${project.build.finalName}.jar</include>
-                                    </includes>
-                                </source>
-                            </sources>
-                        </mapping>
-                    </mappings>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 </project>
