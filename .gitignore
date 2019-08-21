@@ -17,3 +17,8 @@
 /bin/
 /build/
 GraylogSyslogOutput.jar
+mysql*.jar
+.settings
+.classpath
+.project
+.factorypath

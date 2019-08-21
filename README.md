@@ -1,35 +1,41 @@
-Graylog2 output plugin JDBC
-=============================
+# Graylog output plugin JDBC
 
 Sends log to traditional RDMBS databases with the use of JDBC.
 
 ## How to build
 
-Use eclise to build + export as JAR.
-Use mvn package to create package.
-
-## How to use
-
-  * Download graylog2-output-jdbc.jar from releases and put inside /graylog-1.x/plugins folder
-  * Restart Graylog2
-  * Create new output globally or inside stream.
-  * Make sure your RDBMS commit speed is suffcient to handle output message rate. 
+- Use `mvn package` to create JAR
+- See **Providing JDBC driver** to adjust JAR for your RDBMS
+- Put prepared JAR inside **Graylog** plugins folder
+- Put JDBC driver inside **Graylog** plugins folder
+- Restart Graylog
+- Create new output globally or inside stream.
+- Connect output to your stream
+- Make sure your RDBMS commit speed is sufficient to handle output message rate.
 
 ## Important note about JDBC driver
 
-Graylog does not ship with JDBC drivers. You must add your driver manually AND update graylog2-output-jdbc.jar accordingly.
+Graylog does not ship with JDBC drivers. 
+You must add your driver JAR manually to plugins and **update* graylog2-output-jdbc.jar accordingly.
 
 Add following line to graylog2-output-jdbc.jar/META-INF/MANIFEST.MF
 
-	Class-Path: <driver>.jar
+Class-Path: <driver>.jar
+
+Example: 
+```
+Class-Path: mysql-connector-java-8.0.17.jar
+```
 
 ## Output options
 
 #### Driver to use
 
-Driver to initialize. Needed so URL can be handled properly.
+Driver class to initialize. Needed so URL can be handled properly.
 
 Default value: NONE
+
+Example: com.mysql.jdbc.Driver
 
 #### JDBC URL
 
@@ -37,17 +43,19 @@ Required. Fully qualified JDBC url to connect to.
 
 Default value: NONE
 
+Example: jdbc:mysql://localhost:3307/graylog
+
 #### Username
 
 Optional. Username to connect as. If not specified, no password will be passed to driver.
 
-Default value: NONE 
+Default value: NONE
 
 #### Password
 
 Optional. Password for user.
 
-Default value: NONE 
+Default value: NONE
 
 #### Additional fields
 
@@ -70,26 +78,29 @@ Default value: insert into log_attribute (log_id, name, value) values (?, ?, ?)
 ### Table definition
 
 By default output uses table 'log' for main message entry and 'log_attribute' for attributes.
-Sample table creation script:
+Sample table creation script (MySQL):
 
-	create table log (
-		id numeric(10,0),
+```sql
+	create table if not exists log (
+		id int not null auto_increment,
 		message_date datetime,
-		message_id varchar(32), 
+		message_id varchar(64),
 		source varchar(32),
-		message varchar(255) null
-	)
+		message varchar(4096) null,
+		PRIMARY KEY (id)
+	);
 
-	create table log_attribute (
-		id numeric(10,0) identity,
-		log_id numeric(10,0), 
+	create table if not exists log_attribute (
+		id int not null auto_increment,
+		log_id numeric(10,0),
 		name varchar(255),
-		value varchar(4096) null
-	)
+		value varchar(4096) null,
+		PRIMARY key (ID)
+	);
+```
 
-Make sure table log, column ID is generates IDs automatically. For example add 'identity' (MS SQL/Sybase ASE) or AUTO_INCREMENT (MySQL) into column definition.   
+Make sure that for table log, column ID are generated automatically. For example add 'identity' (MS SQL/Sybase ASE) or AUTO_INCREMENT (MySQL) into column definition.
 
 ## Links
 
-  * https://github.com/Graylog2
-
+- https://github.com/Graylog2

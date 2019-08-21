@@ -1,0 +1,41 @@
+#!/bin/bash
+
+HERE=$PWD
+GL=~/Downloads/graylog-3.1.0
+TT=$GL/tmp
+mkdir -p $TT
+sudo umount $TT
+
+docker rm -f elastic
+docker rm -f mongo
+docker rm -f mysql
+
+set -e
+sudo mount -o bind,noexec $TT $TT
+export JAVA_OPTS="-Djava.io.tmpdir=$TT"
+cd ${HERE}
+
+if [ ! -f $GL/graylog.conf ]; then
+    cp sample-graylog.conf $GL/graylog.conf
+fi
+
+mvn package -DskipTests
+# Update JAR with manifest
+cp target/graylog-output-jdbc-2.5.1.jar target/graylog-output-jdbc-2.5.1-mysql.jar
+
+jar -uvmf manifest-mysql.mf target/graylog-output-jdbc-2.5.1-mysql.jar
+cp mysql-connector-java-8.0.17.jar $GL/plugin/
+cp target/graylog-output-jdbc-2.5.1-mysql.jar $GL/plugin/
+
+docker run --name elastic -p 9200:9200 -d elasticsearch:5
+docker run --name mongo -p 27017:27017 -d mongo:3.4
+docker run --name mysql -p 3307:3306 \
+    -v ${HERE}/scripts/test-mysql:/docker-entrypoint-initdb.d \
+    -e MYSQL_ROOT_PASSWORD=123 -e MYSQL_DATABASE=graylog -e MYSQL_USER=graylog -e MYSQL_PASSWORD=123 \
+    -d mariadb:5.5
+docker start elastic
+docker start mongo
+
+# Run Graylog now
+export GRAYLOG_CONF=$GL/graylog.conf
+$GL/bin/graylogctl run

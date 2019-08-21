@@ -313,7 +313,7 @@ public class JDBCOutput implements MessageOutput {
 		@Override
 		public ConfigurationRequest getRequestedConfiguration() {
 			final ConfigurationRequest configurationRequest = new ConfigurationRequest();
-			configurationRequest.addField(new TextField("driver", "Driver to use", "", "Driver to initialize. Needed so URL can be handled properly.", ConfigurationField.Optional.OPTIONAL));
+			configurationRequest.addField(new TextField("driver", "Driver class to use", "", "Driver class to initialize. Needed so URL can be handled properly.", ConfigurationField.Optional.OPTIONAL));
 			configurationRequest.addField(new TextField("url", "JDBC URL", "", "Fully qualified url proto://host/db to connect to.", ConfigurationField.Optional.NOT_OPTIONAL));
 			configurationRequest.addField(new TextField("username", "Username", "", "Username to connect as. Optional.", ConfigurationField.Optional.OPTIONAL));
 			configurationRequest.addField(new TextField("password", "Password", "", "Password for user. Optional.", ConfigurationField.Optional.OPTIONAL));
