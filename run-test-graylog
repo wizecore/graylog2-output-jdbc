@@ -21,6 +21,7 @@ fi
 
 mvn package -DskipTests
 # Update JAR with manifest
+
 cp target/graylog-output-jdbc-2.5.1.jar target/graylog-output-jdbc-2.5.1-mysql.jar
 
 jar -uvmf manifest-mysql.mf target/graylog-output-jdbc-2.5.1-mysql.jar
